@@ -56,7 +56,7 @@ module.exports.routes = {
   'GET /user/getAllSellers' : 'UserController.getAllSellers',
   'GET /user/getAllBuyers'  : 'UserController.getAllBuyers',
   'POST /user/createNewUser': 'UserController.createNewUser',
-  'POST /user/userLogin'    : 'UserController.userLogin',           // --> This route not working -- need to fix bcrypt hash
+  'POST /user/userLogin'    : 'UserController.userLogin',        
   'POST /user/updateUser'   : 'UserController.updateUserDetails',
   'POST /user/deleteUser'   : 'UserController.deleteUserDetails',
 

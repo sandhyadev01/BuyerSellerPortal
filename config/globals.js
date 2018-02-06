@@ -10,6 +10,9 @@
  */
 module.exports.globals = {
 
+jwtSecret : '!AGJ8643@bngs^$#GDFGasdvrsh&32?daZ',
+
+
   /****************************************************************************
   *                                                                           *
   * Expose the lodash installed in Sails core as a global variable. If this   *

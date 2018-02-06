@@ -6,8 +6,8 @@
  */
 
 var bcrypt = require('bcrypt');
-const saltRounds = 10;
-var salt = bcrypt.genSaltSync(saltRounds);
+//const saltRounds = 10;
+//var salt = bcrypt.genSaltSync(saltRounds);
 var jwt = require('jsonwebtoken');
 
 module.exports = {
@@ -57,72 +57,76 @@ module.exports = {
   	createNewUser : function(data, callback){
   		
   		var plainTextPassword = data.password;
-		var hash = bcrypt.hashSync(plainTextPassword, salt);
-	 
-		lCase_userRole = data.role.toLowerCase();
 
-		var userDetails = {
-	  		userName 		: data.name,
-	  		userEmail 		: data.email,
-	  		userPassword 	: hash, 		//data.password,
-	  		userRole 		: lCase_userRole,
-	  		city			: data.city
-  		};
+  		UtilityService.passwordHash(plainTextPassword, function(err, hashedPassword){
+  			if(err)
+  				return callback(err);
 
-  		User.findOne({ userEmail : data.email }).exec(function(err, userFound){
-  			if(err){
-				return callback(err);
-			}
+			lCase_userRole = data.role.toLowerCase();
 
-			if(!userFound){
-				User.create(userDetails).exec(function(err, createdUser){
-					if(err)
-						return callback(err);
-				if(createdUser){
-					
-					console.log("User Created Successfully");
-					console.log(createdUser);
-					console.log("Now checking for User Role --> Buyer OR Seller!");
-					
-					var userRole_LCase = data.role.toLowerCase();
-					if(userRole_LCase === 'buyer'){
+			var userDetails = {
+		  		userName 		: data.name,
+		  		userEmail 		: data.email,
+		  		userPassword 	: hashedPassword, 		//data.password,
+		  		userRole 		: lCase_userRole,
+		  		city			: data.city
+	  		};
+
+	  		User.findOne({ userEmail : data.email }).exec(function(err, userFound){
+	  			if(err){
+					return callback(err);
+				}
+
+				if(!userFound){
+					User.create(userDetails).exec(function(err, createdUser){
+						if(err)
+							return callback(err);
+					if(createdUser){
 						
-						var buyerDetails = { bUserId : createdUser.id };
+						console.log("User Created Successfully");
+						console.log(createdUser);
+						console.log("Now checking for User Role --> Buyer OR Seller!");
+						
+						var userRole_LCase = data.role.toLowerCase();
+						if(userRole_LCase === 'buyer'){
+							
+							var buyerDetails = { bUserId : createdUser.id };
 
-						console.log("Role Identified :: " + userRole_LCase + "..!");
-						console.log("Buyer-UserID :: "+ buyerDetails.bUserId);
+							console.log("Role Identified :: " + userRole_LCase + "..!");
+							console.log("Buyer-UserID :: "+ buyerDetails.bUserId);
 
-						Buyer.create(buyerDetails).exec(function(err, buyerCreated){
-							if(err)
-								return callback(err);
+							Buyer.create(buyerDetails).exec(function(err, buyerCreated){
+								if(err)
+									return callback(err);
 
-							return callback(null, buyerCreated);
-						});
+								return callback(null, buyerCreated);
+							});
+						}
+						else{
+							var sellerDetails = { sUserId : createdUser.id	};
+
+							console.log("Role Identified :: " + userRole_LCase + "..!");
+							console.log("Seller-UserID :: "+ sellerDetails.sUserId);
+
+							Seller.create(sellerDetails).exec(function(err, sellerCreated){
+								if(err)
+									return callback(err);
+
+
+								callback(null, sellerCreated);
+							});
+						}
 					}
 					else{
-						var sellerDetails = { sUserId : createdUser.id	};
-
-						console.log("Role Identified :: " + userRole_LCase + "..!");
-						console.log("Seller-UserID :: "+ sellerDetails.sUserId);
-
-						Seller.create(sellerDetails).exec(function(err, sellerCreated){
-							if(err)
-								return callback(err);
-
-
-							callback(null, sellerCreated);
-						});
+						callback({message : "Error in Creating User", status : 400});
 					}
+
+					});
 				}
 				else{
-					callback({message : "Error in Creating User", status : 400});
+					callback({message : "User Already exists", status : 400});
 				}
-
-				});
-			}
-			else{
-				callback({message : "User Already exists", status : 400});
-			}
+	  		});
   		});
   	},
 
@@ -132,26 +136,29 @@ module.exports = {
   			if(err)
   				return callback(err);
 
-  		//	 var plainTextPassword = data.password;
-  			 var hash = bcrypt.hashSync(data.password, salt);
-
 			if(userFound){
-  				console.log("User Found..");
-  				var passwordresult = bcrypt.compareSync(userFound.userPassword, hash);
-  				
-  				console.log(hash);
-  				console.log(userFound.userPassword);
-				console.log(passwordresult);
-				
-				if(passwordresult){
-					return callback({ message : "Login Successful.."});
-					var loginToken = jwt.sign(data.email, '!AGJ8643@bngs&32?daZ', { expiresIn : '1d'}); 
-				}
 
-				else
-					return callback({ message : "Credentials Mismatch", status : 500 });
+				console.log(data.password);
+				console.log(userFound.userPassword);
+  				UtilityService.passwordCompare(data.password, userFound.userPassword, function(err, res){
+  					if(err)
+  						return callback(err);
+
+  					if(res) {
+  						console.log("Login Successful");
+
+						var loginToken = jwt.sign({data : userFound.id, role : userFound.userRole}, sails.config.globals.jwtSecret, { expiresIn : '1 day' }); 
+						userFound["token"] = loginToken;
+  						sails.log(userFound);
+						return callback(null, userFound);
+  					} else {
+  						console.log("Credentials Mismatch");
+  						return callback({ message : "Credentials Mismatch", status : 500 });
+  					}
+  				});
+  			} else {
+  				return callback(null, {message : "Have you signed up yet !"});
   			}	
-			
   		});	
   	},
 

@@ -35,12 +35,8 @@ module.exports = {
          _.each(itemsFound, function(itemsFound){ 
           
           	var itemObj = {
-	      		name : ""
-	      	};
-          	//console.log(itemsFound.itemId.itemName); 
-          	// itemsJson = {
-          	// 	items : itemsFound.itemId.itemName
-          	// };
+	      		   name : ""
+	      	    };
           	itemObj.name = itemsFound.itemId.itemName;
           	itemObj["price"] = itemsFound.itemId.itemPrice;
           	itemsJson.push(itemObj);

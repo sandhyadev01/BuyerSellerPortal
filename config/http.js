@@ -8,18 +8,10 @@
  * For more information on configuration, check out:
  * http://sailsjs.org/#!/documentation/reference/sails.config/sails.config.http.html
  */
+var expressJwt = require('express-jwt');
+var bearerToken = require('express-bearer-token');
 
 module.exports.http = {
-
-  /****************************************************************************
-  *                                                                           *
-  * Express middleware to use for every Sails request. To add custom          *
-  * middleware to the mix, add a function to the middleware config object and *
-  * add its key to the "order" array. The $custom key is reserved for         *
-  * backwards-compatibility with Sails v0.9.x apps that use the               *
-  * `customMiddleware` config option.                                         *
-  *                                                                           *
-  ****************************************************************************/
 
   middleware: {
 
@@ -77,8 +69,37 @@ module.exports.http = {
     // bodyParser: require('skipper')({strict: true})
 
   },
+  customMiddleware: function(app){
+    app.use(expressJwt({secret: sails.config.globals.jwtSecret}) .unless({path: [
+       '/',
+       '/user/createNewUser',
+       '/user/userLogin',
+      // '/user/verifyOtp',
+      // '/user/requestOtp',
+      // '/user/resetpassword',
+      // '/user/forgotPassword',
+      // '/email/verify',
+      // '/email/verified',
+      // '/facebook/login/passwordCheck',
+      // '/config/getConfig',
+      // '/cron/updateWeekAvg',
+      // '/cron/setCronJobToActive',
+      // '/cron/updateWeekPercentile',
+      // '/deeplink',
+      // /^\/favicon.ico/,
+      // /^\/styles\/.*/,
+      // /^\/js\/.*/,
+      // /^\/images\/.*/ 
+      ]}));
 
+    app.use(bearerToken({headerKey: 'Bearer'}));
 
+    app.use(function (err, req, res, next) {
+      if (err.name === 'UnauthorizedError') {
+        res.send(401, {status: 401, message: err.message});
+      }
+    });
+},
   /***************************************************************************
   *                                                                          *
   * The number of milliseconds to cache static assets in production.         *
